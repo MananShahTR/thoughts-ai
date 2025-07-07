@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Spinner from "./Spinner";
 
 interface Thought {
   id: number;
@@ -14,7 +15,11 @@ export default function TodayView() {
 
   const queryClient = useQueryClient();
 
-  const { data: thoughts = [], isLoading } = useQuery<Thought[]>({
+  const {
+    data: thoughts = [],
+    isLoading,
+    isError,
+  } = useQuery<Thought[]>({
     queryKey: ["thoughts", "today"],
     queryFn: async () => {
       const res = await fetch("/api/thoughts?limit=100");
@@ -83,7 +88,17 @@ export default function TodayView() {
         </button>
       </div>
 
-      {!isLoading && thoughts.length > 0 && (
+      {isLoading && (
+        <div className="flex justify-center mt-6">
+          <Spinner />
+        </div>
+      )}
+
+      {isError && (
+        <p className="text-red-500 mt-6">Failed to load thoughts.</p>
+      )}
+
+      {!isLoading && !isError && thoughts.length > 0 && (
         <ul className="flex flex-col gap-4 mt-6" aria-label="Today&apos;s thoughts list">
           {thoughts.map((t) => (
             <li key={t.id} className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border-l-4 border-blue-600">

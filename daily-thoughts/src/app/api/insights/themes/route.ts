@@ -69,16 +69,33 @@ export async function GET(request: Request) {
     const tokens = t.text
       .toLowerCase()
       .split(/[^a-zA-Z0-9']/)
-      .filter(Boolean);
+      .filter((tok) => tok && !STOPWORDS.has(tok));
+
+    // unigrams
     for (const token of tokens) {
-      if (STOPWORDS.has(token)) continue;
       freq[token] = (freq[token] || 0) + 1;
+    }
+
+    // bigrams & trigrams
+    for (let i = 0; i < tokens.length; i++) {
+      if (i + 1 < tokens.length) {
+        const bigram = `${tokens[i]} ${tokens[i + 1]}`;
+        freq[bigram] = (freq[bigram] || 0) + 1;
+      }
+      if (i + 2 < tokens.length) {
+        const trigram = `${tokens[i]} ${tokens[i + 1]} ${tokens[i + 2]}`;
+        freq[trigram] = (freq[trigram] || 0) + 1;
+      }
     }
   }
 
+  // Minimum occurrences to be considered theme
+  const MIN_OCCUR = 2;
+
   const themes = Object.entries(freq)
+    .filter(([, count]) => count >= MIN_OCCUR)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
+    .slice(0, 30)
     .map(([word, count]) => ({ word, count }));
 
   return NextResponse.json({ period: period ?? "all", themes });

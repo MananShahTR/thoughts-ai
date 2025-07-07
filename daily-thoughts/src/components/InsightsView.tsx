@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Spinner from "./Spinner";
 
 interface Theme {
   word: string;
@@ -49,8 +50,13 @@ export default function InsightsView() {
       </div>
 
       {/* Themes List */}
-      {isLoading && <p className="text-zinc-500">Loading themes...</p>}
-      {error && <p className="text-red-500">Error loading themes.</p>}
+      {isLoading && (
+        <div className="flex justify-center">
+          <Spinner />
+        </div>
+      )}
+
+      {error && <p className="text-red-500">Failed to load themes.</p>}
 
       {data && data.themes.length === 0 && (
         <p className="text-zinc-500">No themes yet for this period.</p>

@@ -12,3 +12,18 @@ model Thought {
   text      String
   createdAt DateTime @default(now())
 }
+
+enum Period {
+  week
+  month
+  year
+  all
+}
+
+model Theme {
+  id          Int      @id @default(autoincrement())
+  word        String
+  count       Int
+  period      Period
+  generatedAt DateTime @default(now())
+}
