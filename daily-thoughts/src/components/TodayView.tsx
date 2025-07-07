@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Spinner from "./Spinner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Thought {
   id: number;
@@ -99,22 +100,31 @@ export default function TodayView() {
       )}
 
       {!isLoading && !isError && thoughts.length > 0 && (
-        <ul className="flex flex-col gap-4 mt-6" aria-label="Today&apos;s thoughts list">
-          {thoughts.map((t) => (
-            <li key={t.id} className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border-l-4 border-blue-600">
-              <time
-                dateTime={t.createdAt}
-                className="block text-xs text-zinc-500 mb-2"
+        <AnimatePresence mode="popLayout">
+          <ul className="flex flex-col gap-4 mt-6" aria-label="Today&apos;s thoughts list">
+            {thoughts.map((t) => (
+              <motion.li
+                key={t.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border-l-4 border-blue-600"
               >
-                {new Date(t.createdAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </time>
-              <p className="whitespace-pre-wrap">{t.text}</p>
-            </li>
-          ))}
-        </ul>
+                <time
+                  dateTime={t.createdAt}
+                  className="block text-xs text-zinc-500 mb-2"
+                >
+                  {new Date(t.createdAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </time>
+                <p className="whitespace-pre-wrap">{t.text}</p>
+              </motion.li>
+            ))}
+          </ul>
+        </AnimatePresence>
       )}
     </section>
   );

@@ -3,10 +3,16 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Spinner from "./Spinner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Theme {
   word: string;
   count: number;
+}
+
+interface InsightsResponse {
+  themes: Theme[];
+  avgSentiment: number;
 }
 
 const periods = [
@@ -19,7 +25,7 @@ const periods = [
 export default function InsightsView() {
   const [period, setPeriod] = useState<string>("month");
 
-  const { data, isLoading, error } = useQuery<{ themes: Theme[] }>({
+  const { data, isLoading, error } = useQuery<InsightsResponse>({
     queryKey: ["themes", period],
     queryFn: async () => {
       const res = await fetch(`/api/insights/themes?period=${period}`);
@@ -63,17 +69,30 @@ export default function InsightsView() {
       )}
 
       {data && data.themes.length > 0 && (
-        <ul className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {data.themes.map((t) => (
-            <li
-              key={t.word}
-              className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 flex flex-col items-center"
-            >
-              <span className="text-lg font-semibold">{t.word}</span>
-              <span className="text-sm">{t.count} mention{t.count > 1 ? "s" : ""}</span>
-            </li>
-          ))}
-        </ul>
+        <AnimatePresence>
+          <motion.ul layout className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {data.themes.map((t) => (
+              <motion.li
+                layout
+                key={t.word}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+                className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 flex flex-col items-center"
+              >
+                <span className="text-lg font-semibold">{t.word}</span>
+                <span className="text-sm">{t.count} mention{t.count > 1 ? "s" : ""}</span>
+              </motion.li>
+            ))}
+          </motion.ul>
+        </AnimatePresence>
+      )}
+
+      {data && (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Average sentiment: {data.avgSentiment.toFixed(2)}
+        </p>
       )}
     </section>
   );

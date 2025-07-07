@@ -11,6 +11,9 @@ model Thought {
   id        Int      @id @default(autoincrement())
   text      String
   createdAt DateTime @default(now())
+  sentiment Float
+
+  @@index([createdAt])
 }
 
 enum Period {

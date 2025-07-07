@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import Sentiment from "sentiment";
 
 const ThoughtInput = z.object({
   text: z.string().min(1).max(2000),
@@ -25,9 +26,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
+  const sentiment = new Sentiment();
+  const result = sentiment.analyze(parsed.data.text);
+
   const thought = await prisma.thought.create({
     data: {
       text: parsed.data.text,
+      sentiment: result.score,
     },
   });
 

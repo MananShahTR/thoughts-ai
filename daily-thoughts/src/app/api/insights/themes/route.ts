@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 
   const thoughts = await prisma.thought.findMany({
     where,
-    select: { text: true },
+    select: { text: true, sentiment: true },
   });
 
   const freq: Record<string, number> = {};
@@ -98,5 +98,13 @@ export async function GET(request: Request) {
     .slice(0, 30)
     .map(([word, count]) => ({ word, count }));
 
-  return NextResponse.json({ period: period ?? "all", themes });
+  // Cast to include sentiment field returned by select
+  const sentimentsArray = thoughts as unknown as Array<{ sentiment: number }>;
+  const avgSentiment =
+    sentimentsArray.length > 0
+      ? sentimentsArray.reduce((acc, t) => acc + t.sentiment, 0) /
+        sentimentsArray.length
+      : 0;
+
+  return NextResponse.json({ period: period ?? "all", avgSentiment, themes });
 }
