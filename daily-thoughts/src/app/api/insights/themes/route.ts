@@ -65,7 +65,11 @@ export async function GET(request: Request) {
   });
 
   const freq: Record<string, number> = {};
-  for (const t of thoughts) {
+  const sentimentTotals: Record<string, number> = {};
+
+  const thoughtsWithSentiment = thoughts as unknown as Array<{ text: string; sentiment: number }>;
+
+  for (const t of thoughtsWithSentiment) {
     const tokens = t.text
       .toLowerCase()
       .split(/[^a-zA-Z0-9']/)
@@ -74,6 +78,7 @@ export async function GET(request: Request) {
     // unigrams
     for (const token of tokens) {
       freq[token] = (freq[token] || 0) + 1;
+      sentimentTotals[token] = (sentimentTotals[token] || 0) + (t.sentiment ?? 0);
     }
 
     // bigrams & trigrams
@@ -81,10 +86,12 @@ export async function GET(request: Request) {
       if (i + 1 < tokens.length) {
         const bigram = `${tokens[i]} ${tokens[i + 1]}`;
         freq[bigram] = (freq[bigram] || 0) + 1;
+        sentimentTotals[bigram] = (sentimentTotals[bigram] || 0) + (t.sentiment ?? 0);
       }
       if (i + 2 < tokens.length) {
         const trigram = `${tokens[i]} ${tokens[i + 1]} ${tokens[i + 2]}`;
         freq[trigram] = (freq[trigram] || 0) + 1;
+        sentimentTotals[trigram] = (sentimentTotals[trigram] || 0) + (t.sentiment ?? 0);
       }
     }
   }
@@ -96,14 +103,16 @@ export async function GET(request: Request) {
     .filter(([, count]) => count >= MIN_OCCUR)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 30)
-    .map(([word, count]) => ({ word, count }));
+    .map(([word, count]) => ({
+      word,
+      count,
+      avgSentiment: parseFloat((sentimentTotals[word] / count).toFixed(2)),
+    }));
 
-  // Cast to include sentiment field returned by select
-  const sentimentsArray = thoughts as unknown as Array<{ sentiment: number }>;
   const avgSentiment =
-    sentimentsArray.length > 0
-      ? sentimentsArray.reduce((acc, t) => acc + t.sentiment, 0) /
-        sentimentsArray.length
+    thoughtsWithSentiment.length > 0
+      ? thoughtsWithSentiment.reduce((acc, t) => acc + t.sentiment, 0) /
+        thoughtsWithSentiment.length
       : 0;
 
   return NextResponse.json({ period: period ?? "all", avgSentiment, themes });

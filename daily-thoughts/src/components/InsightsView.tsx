@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Theme {
   word: string;
   count: number;
+  avgSentiment: number;
 }
 
 interface InsightsResponse {
@@ -83,6 +84,15 @@ export default function InsightsView() {
               >
                 <span className="text-lg font-semibold">{t.word}</span>
                 <span className="text-sm">{t.count} mention{t.count > 1 ? "s" : ""}</span>
+                <span className={`text-xs rounded-full px-2 py-0.5 mt-1 ${
+                  t.avgSentiment > 0
+                    ? "bg-green-100 text-green-700"
+                    : t.avgSentiment < 0
+                    ? "bg-red-100 text-red-700"
+                    : "bg-zinc-200 text-zinc-700"
+                }`}>
+                  {t.avgSentiment.toFixed(1)}
+                </span>
               </motion.li>
             ))}
           </motion.ul>

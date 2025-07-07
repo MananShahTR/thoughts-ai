@@ -13,6 +13,8 @@ model Thought {
   createdAt DateTime @default(now())
   sentiment Float
 
+  themes    ThoughtTheme[]
+
   @@index([createdAt])
 }
 
@@ -29,4 +31,17 @@ model Theme {
   count       Int
   period      Period
   generatedAt DateTime @default(now())
+
+  thoughts    ThoughtTheme[]
+}
+
+model ThoughtTheme {
+  thought   Thought @relation(fields: [thoughtId], references: [id], onDelete: Cascade)
+  thoughtId Int
+
+  theme     Theme   @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  themeId   Int
+
+  @@id([thoughtId, themeId])
+  @@index([themeId])
 }
