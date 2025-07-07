@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Thought {
   id: number;
@@ -10,45 +11,41 @@ interface Thought {
 
 export default function TodayView() {
   const [input, setInput] = useState("");
-  const [thoughts, setThoughts] = useState<Thought[]>([]);
 
-  const storageKey = () => {
-    const today = new Date();
-    return `thoughts-${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-  };
+  const queryClient = useQueryClient();
 
-  // Load today's thoughts from localStorage on mount
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(storageKey());
-      if (stored) {
-        setThoughts(JSON.parse(stored));
-      }
-    } catch (err) {
-      console.error("Failed to parse saved thoughts", err);
-    }
-  }, []);
+  const { data: thoughts = [], isLoading } = useQuery<Thought[]>({
+    queryKey: ["thoughts", "today"],
+    queryFn: async () => {
+      const res = await fetch("/api/thoughts?limit=100");
+      if (!res.ok) throw new Error("Failed to fetch thoughts");
+      const data: Thought[] = await res.json();
+      // Only show today's
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      return data.filter((t) => new Date(t.createdAt) >= startOfDay);
+    },
+  });
 
-  // Persist whenever thoughts change
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem(storageKey(), JSON.stringify(thoughts));
-    } catch (err) {
-      console.error("Failed to save thoughts", err);
-    }
-  }, [thoughts]);
+  const mutation = useMutation({
+    mutationFn: async (text: string) => {
+      const res = await fetch("/api/thoughts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("Failed to save thought");
+      return (await res.json()) as Thought;
+    },
+    onSuccess: (newThought) => {
+      queryClient.setQueryData<Thought[]>(["thoughts", "today"], (old = []) => [newThought, ...old]);
+    },
+  });
 
   const handleAdd = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-    const newThought: Thought = {
-      id: Date.now(),
-      text: trimmed,
-      createdAt: new Date().toISOString(),
-    };
-    setThoughts([newThought, ...thoughts]);
+    mutation.mutate(trimmed);
     setInput("");
   };
 
@@ -86,7 +83,7 @@ export default function TodayView() {
         </button>
       </div>
 
-      {thoughts.length > 0 && (
+      {!isLoading && thoughts.length > 0 && (
         <ul className="flex flex-col gap-4 mt-6" aria-label="Today&apos;s thoughts list">
           {thoughts.map((t) => (
             <li key={t.id} className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border-l-4 border-blue-600">
